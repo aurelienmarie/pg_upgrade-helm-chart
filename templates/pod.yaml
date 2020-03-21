@@ -1,0 +1,39 @@
+kind: Pod
+apiVersion: v1
+metadata:
+  name: {{ .Chart.Name }}
+spec:
+  volumes:
+    - name: pgdata
+      persistentVolumeClaim:
+       claimName: {{ required "A .Values.pvcName must be specified!" .Values.pvcName }}
+    - name: configmap-volume
+      configMap:
+        name: pgupgrade-example-script 
+{{ if .Values.configMapVolume }}
+    - name: {{ .Values.configMapVolume.name }}
+      projected:
+        defaultMode: 420
+        sources:
+        - configMap:
+            name: {{ .Values.configMapVolume.name }}
+{{ end }}
+  containers:
+    - name: {{ .Chart.Name }}
+      args:
+      - bash
+      stdin: true
+      tty: true
+      image: {{ printf "tianon/postgres-upgrade:%v-to-%v" .Values.postgres.old .Values.postgres.new }}
+      env:
+      - name: PGDATA
+        value: "/pgdata/data-new/"
+      volumeMounts:
+      - mountPath: "/pgdata"
+        name: pgdata
+      - mountPath: /scripts
+        name: configmap-volume
+{{ if .Values.configMapVolume }}
+      - mountPath: {{ .Values.configMapVolume.mountPath }}
+        name: {{ .Values.configMapVolume.name }}
+{{ end }}

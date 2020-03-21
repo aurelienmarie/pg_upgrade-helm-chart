@@ -1,0 +1,33 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: pgupgrade-example-script
+data:
+  update-postgres-user.sh: |
+    #!/bin/bash
+    ls -l /pgdata/data
+
+    # make the user the same as before
+    re='^[0-9]+$'
+
+    GID=$(ls -l /pgdata/data | awk '{print $4}' | uniq -d)
+    if [[ $GID =~ $re ]] ; then
+        echo 'changing postgres GID'
+        groupmod -g $GID postgres
+    fi
+
+    UUID=$(ls -l /pgdata/data | awk '{print $3}' | uniq -d)
+    if [[ $UUID =~ $re ]] ; then
+        echo 'changing postgres UID'
+        usermod -u $UUID postgres
+    fi
+    
+  upgrade.sh: "#!/bin/bash\n\n# In this example, our Postgresql is located in a data/
+    folder\n\n# Step 1: exec as postgres user as root is not allowed to run initdb
+    or pg_upgrade cmd\ngosu postgres bash\n\n# Step 2: initdb will initialize the
+    required files in $PGDATA folder\n# PGDATA is currently set in env. If it doesn't
+    \ninitdb\n\n# Step 3: pg_upgrade will start old and new database and require access
+    to them.\n# Use new pg_hba to allow local access for pg_upgrade\ncp /pgdata/data-new/pg_hba.conf
+    /pgdata/data/pg_hba.conf\n\n# Step 4: run the upgrade command\npg_upgrade -d /pgdata/data
+    -D /pgdata/data-new --link \n\n# Step 5: remove old data folder\nrm -rf /pgdata/data/\n\n#
+    Step 6: rename the folder containing the new data \nmv /pgdata/data-new/ /pgdata/data/\n"

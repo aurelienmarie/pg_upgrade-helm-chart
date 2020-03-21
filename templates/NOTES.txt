@@ -1,0 +1,9 @@
+1. SSH into the pod using: 
+
+  kubectl exec -it --namespace {{ .Release.Namespace }} {{ .Chart.Name }} -- bash
+
+2. Check if the postgres user is correctly set before doing the upgrade. If that's not the case an example script is provided /scripts/update-postgres-user.sh
+
+3. Init the new folder and run the pg_upgrade using the postgres user. An example of the procedure is provided in /scripts/upgrade.sh
+
+Both scripts are provided as an example. 
